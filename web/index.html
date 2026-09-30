@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>工业表面异常定位</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header>
+    <h1>工业表面异常定位</h1>
+    <p>用正常产品图建立参考记忆库，以<strong>独立</strong>正常图校准阈值，定位新图中的划痕或异物。全程 CPU 离线推理。</p>
+  </header>
+
+  <section class="status-bar" id="statusBar">正在读取系统状态…</section>
+
+  <main>
+    <div class="columns">
+      <section class="panel">
+        <h2>① 参考正常图（建库）</h2>
+        <p class="hint">上传正常产品表面 PNG/JPEG。描述子经贪心最远点选择形成至多 256 项记忆库。<strong>参考图不用于校准阈值。</strong></p>
+        <input type="file" id="referenceInput" accept="image/png,image/jpeg" multiple />
+        <div class="sample-grid" id="referenceList"></div>
+      </section>
+
+      <section class="panel">
+        <h2>② 独立校准正常图（定阈值）</h2>
+        <p class="hint">必须是<strong>未在参考组出现</strong>的其他正常图。阈值 = 这些图分数的 95% 线性分位数，严格大于阈值才判异常。</p>
+        <input type="file" id="calibrationInput" accept="image/png,image/jpeg" multiple />
+        <div class="sample-grid" id="calibrationList"></div>
+      </section>
+    </div>
+
+    <section class="panel">
+      <h2>③ 检测新图</h2>
+      <div class="detect-row">
+        <input type="file" id="detectInput" accept="image/png,image/jpeg" />
+        <label>热图透明度
+          <input type="range" id="opacityRange" min="0" max="100" value="55" />
+          <span id="opacityValue">55%</span>
+        </label>
+      </div>
+      <div class="result-meta" id="resultMeta">尚未检测。</div>
+      <div class="error" id="errorBox" hidden></div>
+      <div class="canvas-wrap">
+        <canvas id="resultCanvas"></canvas>
+      </div>
+      <p class="hint" id="heatmapNote"></p>
+    </section>
+
+    <section class="panel">
+      <h2>合成示例（仅用于演示与测试，不是训练数据）</h2>
+      <p class="hint">示例由程序确定性生成：正常参考、独立正常校准、划痕异常、异物异常。点击按钮直接送入对应流程。</p>
+      <div id="examples"></div>
+    </section>
+
+    <section class="panel rules">
+      <h2>上传限制与说明</h2>
+      <ul>
+        <li>仅支持 PNG / JPEG，单文件 ≤ 10MB，边长 32–8192 像素。</li>
+        <li>完整图双线性缩放到 224×224 后按 ImageNet 均值方差归一化（不中心裁剪）。</li>
+        <li>冻结 ResNet18 提取 layer2/layer3，对齐 14×14 后拼接为 384 维局部描述子。</li>
+        <li>参考组与校准组不得包含相同图像内容（按缩放后像素哈希判定），重复内容会被拒绝。</li>
+        <li>记忆库、阈值与预处理信息持久化在服务端，重启后自动恢复；重建失败保留旧库。</li>
+        <li>热图颜色上限固定为校准阈值的两倍；阈值为 0 时使用校准图最高分，绝不逐图自动拉伸。</li>
+      </ul>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
